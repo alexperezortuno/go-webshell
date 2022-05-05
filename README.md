@@ -1,1 +1,1 @@
-# go-weshell
+# go-webshell
