@@ -2,7 +2,6 @@ package environment
 
 import (
 	"github.com/gin-gonic/gin"
-	"log"
 	"os"
 	"strconv"
 	"time"
@@ -11,6 +10,7 @@ import (
 type ServerValues struct {
 	Host            string
 	Port            int
+	TimeZone        string
 	ShutdownTimeout time.Duration
 	Context         string
 }
@@ -23,29 +23,34 @@ func env() {
 	}
 }
 
+func getEnv(envName, valueDefault string) string {
+	value := os.Getenv(envName)
+	if value == "" {
+		return valueDefault
+	}
+	return value
+}
+
+func getEnvInt(envName string, valueDefault int) int {
+	value, err := strconv.Atoi(envName)
+	if err != nil {
+		return valueDefault
+	}
+	return value
+}
+
 func Server() ServerValues {
 	env()
-	port, err := strconv.Atoi(os.Getenv("APP_PORT"))
-	host := os.Getenv("APP_HOST")
-	context := os.Getenv("APP_CONTEXT")
-
-	if err != nil {
-		log.Printf("error parsing port")
-		port = 8080
-	}
-
-	if host == "" {
-		host = "0.0.0.0"
-	}
-
-	if context == "" {
-		context = "api"
-	}
+	port := getEnvInt("APP_PORT", 8080)
+	host := getEnv("APP_HOST", "0.0.0.0")
+	timeZone := getEnv("APP_TIME_ZONE", "America/Santiago")
+	context := getEnv("APP_CONTEXT", "api")
 
 	return ServerValues{
 		Host:            host,
 		Port:            port,
 		Context:         context,
+		TimeZone:        timeZone,
 		ShutdownTimeout: 10 * time.Second,
 	}
 }
