@@ -32,11 +32,12 @@ func getEnv(envName, valueDefault string) string {
 }
 
 func getEnvInt(envName string, valueDefault int) int {
-	value, err := strconv.Atoi(envName)
+	value := os.Getenv(envName)
+	res, err := strconv.Atoi(value)
 	if err != nil {
 		return valueDefault
 	}
-	return value
+	return res
 }
 
 func Server() ServerValues {
