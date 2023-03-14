@@ -44,16 +44,7 @@ func Start() (*sql.DB, error) {
 	"created_at" TEXT default CURRENT_TIMESTAMP,
 	"updated_at" TEXT default CURRENT_TIMESTAMP);
 
-	INSERT INTO commands (whitelist, blacklist) VALUES ('', '"sudo",
-			"shutdown", "whoami", "cd ", "reboot", "systemctl", "rm ", "rmdir ", "mkdir ", "touch ",
-			"mv ", "cp ", "cat ", "less", "more", "head", "tail", "find", "grep", "awk", "sed",
-			"sort ", "uniq", "wc", "diff", "patch", "tar ", "gzip ", "gunzip", "bzip2", "unzip", "zip ",
-			"chown ", "chmod ", "chgrp ", "chattr ", "chcon ", "chroot ", "chvt", "chsh", "chfn", "chage ",
-			"chpasswd", "vi", "vim", "nano", "emacs", "ged", "gedit", "kate", "kwrite", "kedit", "python ",
-			"perl ", "ruby ", "php ", "java ", "javac ", "gcc ", "g++ ", "make ", "cmake ", "clang ", "clang++ ", "rustc ",
-			"go ", "node ", "npm ", "yarn ", "pip ", "pip3 ", "pipenv ", "docker ", "docker-compose ", "docker-machine ",
-			"docker-swarm ", "docker-credential ", "dockerd ", "docker-init ", "docker-proxy ", "docker-runc ", "dockerd ",
-			"/.", "sh ", "ssh ", "scp ", "sftp ", "rsync ", "curl ", "wget ", "aria2c ", "aria2 ", "aria2c ", "aria2 "');
+	INSERT INTO commands (whitelist, blacklist) SELECT '', 'sudo,shutdown,whoami,cd ,reboot,systemctl,rm ,rmdir ,mkdir ,touch ,mv ,cp ,cat ,less,more,head,tail,find,grep,awk,sed,sort ,uniq,wc,diff,patch,tar ,gzip ,gunzip,bzip2,unzip,zip ,chown ,chmod ,chgrp ,chattr ,chcon ,chroot ,chvt,chsh,chfn,chage ,chpasswd,vi,vim,nano,emacs, ged,gedit,kate,kwrite,kedit,python ,perl ,ruby ,php ,java ,javac ,gcc ,g++ ,make ,cmake ,clang ,clang++ ,rustc ,go , node ,npm ,yarn ,pip ,pip3 ,pipenv ,docker ,docker-compose ,docker-machine ,docker-swarm ,docker-credential ,dockerd ,docker-init ,docker-proxy ,docker-runc ,dockerd ,/.,sh ,ssh ,scp ,sftp ,rsync ,curl ,wget ,aria2c ,aria2 ,aria2c ,aria2 ' WHERE NOT EXISTS (SELECT id FROM commands WHERE id = 1);
     `
 
 	res, err := db.Exec(sqlStmt)
@@ -112,11 +103,6 @@ func GetAll() (*sql.Rows, error) {
 
 func GetBlackList() (*sql.Rows, error) {
 	rows, err := db.Query("SELECT blacklist FROM commands LIMIT 1")
-	if err != nil {
-		return nil, err
-	}
-
-	err = rows.Close()
 	if err != nil {
 		return nil, err
 	}

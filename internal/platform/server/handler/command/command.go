@@ -15,6 +15,7 @@ func CmdHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		log.Printf("command to execute: %s", ctx.Query("cmd"))
 		rowsCommands, err := data_base.GetBlackList()
+
 		if err != nil {
 			log.Printf("Error getting blacklist: %s", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -29,29 +30,18 @@ func CmdHandler() gin.HandlerFunc {
 
 		forbiddenCommand := "forbidden command"
 		var forbiddenCommands []string
+		var command string
 		for rowsCommands.Next() {
-			err := rowsCommands.Scan(&forbiddenCommand)
+			err := rowsCommands.Scan(&command)
 			if err != nil {
 				log.Printf("Error scanning row: %s", err)
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-			forbiddenCommands = append(forbiddenCommands, forbiddenCommand)
+			forbiddenCommands = append(forbiddenCommands, command)
 		}
 
-		//forbiddenCommands := []string{"sudo",
-		//	"shutdown", "whoami", "cd ", "reboot", "systemctl", "rm ", "rmdir ", "mkdir ", "touch ",
-		//	"mv ", "cp ", "cat ", "less", "more", "head", "tail", "find", "grep", "awk", "sed",
-		//	"sort ", "uniq", "wc", "diff", "patch", "tar ", "gzip ", "gunzip", "bzip2", "unzip", "zip ",
-		//	"chown ", "chmod ", "chgrp ", "chattr ", "chcon ", "chroot ", "chvt", "chsh", "chfn", "chage ",
-		//	"chpasswd", "vi", "vim", "nano", "emacs", "ged", "gedit", "kate", "kwrite", "kedit", "python ",
-		//	"perl ", "ruby ", "php ", "java ", "javac ", "gcc ", "g++ ", "make ", "cmake ", "clang ", "clang++ ", "rustc ",
-		//	"go ", "node ", "npm ", "yarn ", "pip ", "pip3 ", "pipenv ", "docker ", "docker-compose ", "docker-machine ",
-		//	"docker-swarm ", "docker-credential ", "dockerd ", "docker-init ", "docker-proxy ", "docker-runc ", "dockerd ",
-		//	"/.", "sh ", "ssh ", "scp ", "sftp ", "rsync ", "curl ", "wget ", "aria2c ", "aria2 ", "aria2c ", "aria2 ",
-		//}
-
-		for _, str := range forbiddenCommands {
+		for _, str := range strings.Split(forbiddenCommands[0], ",") {
 			if strings.Contains(ctx.Query("cmd"), str) {
 				ctx.JSON(http.StatusForbidden, gin.H{
 					"code":    -2002,
