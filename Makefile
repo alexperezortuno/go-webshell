@@ -3,7 +3,7 @@ VERSION=1.0.0
 BUILD_DIR=./build
 BUILD_TIME=`date +%FT%T%z`
 GOX_OS_ARCH="darwin/amd64 darwin/arm64 linux/386 linux/amd64 windows/386 windows/amd64"
-CUSTOM_GOPATH=/home/hdca/Sdk/go1.20.2
+CUSTOM_GOPATH=${YOUR_GOPATH}
 export GOPATH=${CUSTOM_GOPATH}
 
 .PHONY: default
