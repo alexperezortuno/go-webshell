@@ -11,11 +11,6 @@ import (
 var db *sql.DB
 
 func Connect() (*sql.DB, error) {
-	//err := os.Remove("./db.sqlite")
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	db, _ = sql.Open("sqlite3", "./db.sqlite")
 	db.SetMaxOpenConns(2)
 	db.SetConnMaxLifetime(1 * time.Minute)
