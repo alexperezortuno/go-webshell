@@ -2,12 +2,16 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/handler/command"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/handler/health"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/middleware/logging"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/middleware/recovery"
+	"github.com/alexperezortuno/go-webshell/internal/platform/storage/data_base"
 	"github.com/alexperezortuno/go-webshell/tools/environment"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -46,11 +50,39 @@ func New(ctx context.Context, params environment.ServerValues) (context.Context,
 	return serverContext(ctx), srv
 }
 
+func Close() error {
+	log.Print("Closing db connection...")
+	err := data_base.Close()
+	if err != nil {
+		log.Printf("Error closing db: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *Server) Run(ctx context.Context, params environment.ServerValues) error {
 	log.Println("Server running on", s.httpAddr)
 	srv := &http.Server{
 		Addr:    s.httpAddr,
 		Handler: s.engine,
+	}
+
+	db, err := data_base.Connect()
+	if db == nil {
+		log.Fatalf("No connection to database: %s", err)
+	}
+
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			log.Printf("Error closing db: %s", err)
+		}
+	}(db)
+
+	_, err = data_base.Start()
+	if err != nil {
+		log.Fatalf("Error starting db: %s", err)
 	}
 
 	go func() {
@@ -67,8 +99,17 @@ func (s *Server) Run(ctx context.Context, params environment.ServerValues) error
 }
 
 func (s *Server) registerRoutes(context string) {
+	s.engine.Use(gzip.Gzip(gzip.DefaultCompression))
+	s.engine.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	s.engine.Use(recovery.Middleware(), logging.Middleware())
-
+	s.engine.Use(logging.Middleware(), gin.Logger(), recovery.Middleware())
 	s.engine.GET(fmt.Sprintf("/%s/%s", context, "/health"), health.CheckHandler())
 	s.engine.GET(fmt.Sprintf("/%s/%s", context, "/shell"), command.CmdHandler())
 }
