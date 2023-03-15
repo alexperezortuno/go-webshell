@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/handler/command"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/handler/health"
+	"github.com/alexperezortuno/go-webshell/internal/platform/server/handler/instance"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/middleware/logging"
 	"github.com/alexperezortuno/go-webshell/internal/platform/server/middleware/recovery"
 	"github.com/alexperezortuno/go-webshell/internal/platform/storage/data_base"
 	"github.com/alexperezortuno/go-webshell/tools/environment"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -25,6 +28,8 @@ type Server struct {
 	engine          *gin.Engine
 	shutdownTimeout time.Duration
 }
+
+var p = environment.Server()
 
 func serverContext(ctx context.Context) context.Context {
 	c := make(chan os.Signal, 1)
@@ -99,6 +104,8 @@ func (s *Server) Run(ctx context.Context, params environment.ServerValues) error
 }
 
 func (s *Server) registerRoutes(context string) {
+	store := memstore.NewStore([]byte(p.SecretSession))
+	s.engine.Use(sessions.Sessions(p.SessionName, store))
 	s.engine.Use(gzip.Gzip(gzip.DefaultCompression))
 	s.engine.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
@@ -112,4 +119,5 @@ func (s *Server) registerRoutes(context string) {
 	s.engine.Use(logging.Middleware(), gin.Logger(), recovery.Middleware())
 	s.engine.GET(fmt.Sprintf("/%s/%s", context, "/health"), health.CheckHandler())
 	s.engine.GET(fmt.Sprintf("/%s/%s", context, "/shell"), command.CmdHandler())
+	s.engine.GET(fmt.Sprintf("/%s/%s", context, "/instance"), instance.Handler())
 }

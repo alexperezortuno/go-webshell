@@ -13,6 +13,9 @@ type ServerValues struct {
 	TimeZone        string
 	ShutdownTimeout time.Duration
 	Context         string
+	SafetyZone      string
+	SecretSession   string
+	SessionName     string
 }
 
 func env() {
@@ -46,6 +49,9 @@ func Server() ServerValues {
 	host := getEnv("APP_HOST", "0.0.0.0")
 	timeZone := getEnv("APP_TIME_ZONE", "America/Santiago")
 	context := getEnv("APP_CONTEXT", "api")
+	safetyZone := getEnv("SAFETY_ZONE", "/safety_zone")
+	secretSession := getEnv("SECRET_SESSION", "secret")
+	sessionName := getEnv("SESSION_NAME", "session")
 
 	return ServerValues{
 		Host:            host,
@@ -53,5 +59,8 @@ func Server() ServerValues {
 		Context:         context,
 		TimeZone:        timeZone,
 		ShutdownTimeout: 10 * time.Second,
+		SafetyZone:      safetyZone,
+		SecretSession:   secretSession,
+		SessionName:     sessionName,
 	}
 }
