@@ -45,7 +45,7 @@ func getEnvInt(envName string, valueDefault int) int {
 
 func Server() ServerValues {
 	env()
-	port := getEnvInt("APP_PORT", 8080)
+	port := getEnvInt("APP_PORT", 8001)
 	host := getEnv("APP_HOST", "0.0.0.0")
 	timeZone := getEnv("APP_TIME_ZONE", "America/Santiago")
 	context := getEnv("APP_CONTEXT", "api")

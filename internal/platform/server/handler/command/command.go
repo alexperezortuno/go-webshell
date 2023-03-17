@@ -25,6 +25,7 @@ func CmdHandler() gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		defer func(rows *sql.Rows) {
 			err := rows.Close()
 			if err != nil {
@@ -35,10 +36,12 @@ func CmdHandler() gin.HandlerFunc {
 		forbiddenCommand := "forbidden command"
 		var forbiddenCommands []string
 		var command string
+
 		for rowsCommands.Next() {
 			err := rowsCommands.Scan(&command)
 			if err != nil {
 				log.Printf("Error scanning row: %s", err)
+				insert(ctx, http.StatusInternalServerError)
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
@@ -47,6 +50,7 @@ func CmdHandler() gin.HandlerFunc {
 
 		for _, str := range strings.Split(forbiddenCommands[0], ",") {
 			if strings.Contains(ctx.Query("cmd"), str) {
+				insert(ctx, http.StatusForbidden)
 				ctx.JSON(http.StatusForbidden, gin.H{
 					"code":    -2002,
 					"message": forbiddenCommand,
@@ -56,11 +60,7 @@ func CmdHandler() gin.HandlerFunc {
 		}
 
 		if ctx.Query("cmd") == "" {
-			_, err := data_base.Insert(ctx, http.StatusBadRequest)
-			if err != nil {
-				log.Printf("error inserting command in database: %s", err)
-			}
-
+			insert(ctx, http.StatusBadRequest)
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"code":    -2000,
 				"message": "command is empty",
@@ -78,17 +78,14 @@ func CmdHandler() gin.HandlerFunc {
 			return
 		}
 
-		_, err = data_base.Insert(ctx, http.StatusOK)
-		if err != nil {
-			log.Printf("error inserting command in database: %s", err)
-		}
+		insert(ctx, http.StatusOK)
 
 		rows, err := data_base.GetAll()
 		if err != nil {
 			log.Printf("error getting all commands from database: %s", err)
 		}
 		defer rows.Close()
-		log.Printf("rows: %v", rows)
+
 		for rows.Next() {
 			var id int
 			var header string
@@ -149,4 +146,11 @@ func execute(r *http.Request) (string, error) {
 	}
 
 	return string(out), nil
+}
+
+func insert(ctx *gin.Context, status int) {
+	_, err := data_base.Insert(ctx, status)
+	if err != nil {
+		log.Printf("error inserting command in database: %s", err)
+	}
 }
